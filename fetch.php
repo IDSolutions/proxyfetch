@@ -9,9 +9,22 @@ require_once __DIR__."/includes/lib.php";
 require_once __DIR__."/cred.php";
 
 use \GuzzleHttp as GuzzleHttp;
+
+
+// authenticate
+
+
+$client = new GuzzleHttp\Client(['defaults' => ['verify' => false]]);
+$response = $client->request("POST", REMOTE_API."/records/getRecords", ['json' => [
+    "key" => KEY,
+    "proxy_id" => PROXY_ID,
+    "endpoint" => $config['endpoint'],
+    "limit" => 10,
+]]);
+
 foreach (SOURCES as $index=>$source) {
 
-    if($index ==1) {
+    if($index ==0) {
     $config = array("endpoint" => ENDPOINTS[$index]);
 
     switch (strtolower($source)) {

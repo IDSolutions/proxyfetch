@@ -1,3 +1,7 @@
 cred.php
 composer.lock
 .idea/
+/vendor
+/.idea
+*.csv
+*.lock
