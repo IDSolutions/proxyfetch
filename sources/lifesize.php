@@ -36,7 +36,11 @@ $config['port'] = (isset($config['port']) ? $config['port']: 22);
 
 $cdr_records =  cdr_get_lifesize($config['endpoint'], $config['port'], $config['type'], $config['username'], $config['password']);
 
+
+if($config['type'] == "icon")
 $cdr_records = icon_xml_to_arr($cdr_records,$last_join_date );
+elseif($config['type'] == "room")
+    $cdr_records = icon_xml_to_arr($cdr_records,$last_join_date );
 
 //var_dump($cdr_records);
 
@@ -76,15 +80,17 @@ function cdr_get_lifesize($host_address, $endpoint_port, $node_type, $username, 
     // LifeSize Room Nodes
     if($node_type == 'room'){
         // $command = 'status call history -X -f -D '. CDR_DELIMETER // increased wait time for response to 3 seconds allowing -X to function properly, could potentially break with larger responses from Room system
-        $command = 'status call history -X -D '. '|';
+        $command = 'status call history -X -D ;';
         ini_set("default_socket_timeout", 15);
-        return ssh2_exec ($ssh, $command);
+        $result =  ssh2_exec ($ssh, $command);
 
+
+        return room_csv_to_arr($result);
 
 
     }
     // LifeSize Icon Nodes
-    elseif($node_type == 'icon'){
+    elseif($node_type == 'icon') {
 
         $result = array();
 
@@ -167,13 +173,50 @@ function cdr_get_lifesize($host_address, $endpoint_port, $node_type, $username, 
 
 }
 
+function room_csv_to_arr($csv_string , $from_date)
+{
 
-//=====================================================================================
-// Convert Icon XML file to CSV string
-//=====================================================================================
+// example: 4738;2;IDS_Noc;172.31.20.8;Conference Room2;172.31.20.13;172.31.20.13;2017-11-03 09:55:04;01:49:57;Out
+    $rows = array_map('str_getcsv', $csv_string);
+    $arr = [];
+
+    foreach ($rows as $row) {
+
+
+
+            if (isset($row[9]) && validateDate($row[7]) && strtotime($from_date) < strtotime($row[7] )) {
+
+                $r = array();
+
+                $r['local_id'] = $row[0];
+                $r['conference_id'] = $row[1];
+                $r['local_name'] = $row[2];
+                $r['local_number'] = $row[3];
+                $r['remote_name'] = $row[4];
+                $r['remote_number'] = $row[5];
+                $r['dialed_digits'] = $row[6];
+                $r['protocol'] = null;
+                $r['direction'] = $row[9];
+                $r['duration'] = $row[8];
+                $r['start_time'] = $row[7];
+                $r['end_time'] = add_date($row[7], $row[8]);
+                $arr[] = $r;
+
+        }
+
+
+
+    }
+    return $arr;
+
+
+}
+
+
+
 function icon_xml_to_arr($xml_string, $from_date) {
 
-    define("CDR_DELIMETER", "|");
+    //define("CDR_DELIMETER", "|");
     $arr = [];
     $xml     = simplexml_load_string($xml_string);
 
@@ -195,7 +238,7 @@ function icon_xml_to_arr($xml_string, $from_date) {
             if(isset($call['localname']) && isset($call['endtime']) && isset($call['remoteip'])) {
                 // Just for the sake of consistency lets name these the same as the feilds from other devices
                 $r['local_id']      = $call['id'];
-                $r['conference_id']       = $call['callid'];
+                $r['conference_id'] = $call['callid'];
                 $r['local_name']    = $call['localname'];
                 $r['local_number']  = $call['localnumber'];
                 $r['remote_name']   = $call['remotename'];

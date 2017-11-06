@@ -69,3 +69,18 @@ function validateDate($date, $format = 'Y-m-d H:i:s')
     $d = DateTime::createFromFormat($format, $date);
     return $d && $d->format($format) == $date;
 }
+
+function add_date ($datetime, $duration) {
+
+    if(!validateDate($datetime)) return false;
+
+    $o_date = new DateTime($datetime);
+
+    list($hours, $minutes, $seconds) = sscanf($duration, '%d:%d:%d');
+    $interval = new DateInterval(sprintf('PT%dH%dM%dS', $hours, $minutes, $seconds));
+
+    $o_date ->add($interval); // how to add 01:49:57
+    $new_date = $o_date ->format('Y-m-d H:i:s');
+
+    return $new_date;
+}

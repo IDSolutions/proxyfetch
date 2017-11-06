@@ -57,8 +57,6 @@ foreach (SOURCES as $index=>$source) {
         die("first run");
 
     } // if index ==2
-
-
 }
 
 

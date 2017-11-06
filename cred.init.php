@@ -29,6 +29,6 @@ DEFINE('ENDPOINTS', array(
 DEFINE('ENDPOINTS_DETAILS', array(
     array('username'=> 'root', 'password' => 'password'),
     array('type' =>'G500', 'username'=> 'IDS\username', 'password' => 'pass'),
-    array('username'=> 'admin', 'password'=>'password', 'port'=>'22', 'type' => 'icon')));
+    array('username'=> 'admin', 'password'=>'password', 'port'=>'22', 'type' => 'icon'))); // type: icon, room
 
 
