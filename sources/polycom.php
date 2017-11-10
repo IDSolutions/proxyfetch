@@ -25,34 +25,46 @@ if(!defined (IN_APP) ) die("can't access file directly.");
  * */
 
 
+function polycom ($config) {
+
 // api call to grab last call
-$client = new GuzzleHttp\Client(['defaults' => ['verify' => false]]);
-$response = $client->request("GET", REMOTE_API."/records/getRecords", ['json' => [
-    "key" => KEY,
-    "proxy_id" => PROXY_ID,
-    "endpoint" => $config['endpoint'],
-    "limit" => 10,
-]]);
+    $client = new GuzzleHttp\Client(['defaults' => ['verify' => false]]);
+    $response = $client->request("GET", REMOTE_API."/records/getRecords", [
+        "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
+
+        "limit" => 10,
+    ]);
 
 
-$result = json_decode($response->getBody()->getContents());
+    $result = json_decode($response->getBody()->getContents());
 
 
-$counter = 0;
-do{
-    $last_join_date = $result[$counter]->join_time;
-    $date_valid = validateDate($last_join_date);
-    $counter ++;
-    if($counter >= count($result)) break;
-}while(!$date_valid);
 
-// assume if something is wrong
-if($last_join_date == false)
-    $last_join_date = date("Y-m-d", strtotime("-1 days"));
+
+    $counter = 0;
+    if(count($result) == 0)
+        $last_join_date = false;
+    else
+        do{
+            $last_join_date = $result[$counter]->join_time;
+            $date_valid = validateDate($last_join_date);
+            $counter ++;
+            if($counter >= count($result)) break;
+        }while(!$date_valid);
+
+// if something is wrong
+    if($last_join_date == false) {
+        $go_back_days = isset($config['go_back_days']) ? $config['go_back_days'] : 1 ;
+        $last_join_date = date("Y-m-d H:i:s", strtotime("-".$go_back_days." days"));
+    }
+
+
+
 
 // grab all new records
-$from = $last_join_date;
-$cdr_rows = []; // to be filled
+    $from = date("Y-m-d", strtotime($last_join_date));
+    $to = null;
+    $cdr_rows = []; // to be filled
 
     $polycom_url = "https://".$config['endpoint']."/".$config['query'];
     $data = array('from-date' => $from);
@@ -62,7 +74,8 @@ $cdr_rows = []; // to be filled
 
     $tmp_file_path = tempnam(sys_get_temp_dir(), "polycom");
 
- $response = $client->request('GET', $polycom_url, ['verify' => false, 'auth' => [$config['username'], $config['password']] ]);
+
+    $response = $client->request('GET', $polycom_url, ['verify' => false, 'auth' => [$config['username'], $config['password']] ]);
 
     $status_code = $response->getStatusCode(); // hopefully 200
     file_put_contents ($tmp_file_path , $response->getBody()->getContents());
@@ -84,17 +97,27 @@ $cdr_rows = []; // to be filled
             $endpoint_cdr_detail_all_csv = $zipper->getFileContent($file);
         }
     }
-
-    if(!$endpoint_cdr_detail_all_csv) {
+    if(strlen($endpoint_cdr_detail_all_csv) > 100) {
         $lines = explode("\n", $endpoint_cdr_detail_all_csv);
+
         foreach ($lines as $index => $line) {
             if($index !=0) {
+
                 // skip first line
                 $cdr_row = [];
 
                 $cdr_line= str_getcsv($line);
 
-                if(is_array($cdr_line) && count($cdr_line) >=27) {
+
+
+//echo $csv_date_formated->format('Y-m-d H:i:s');
+
+//die();
+                @$last_join_date_formated  = \DateTime::createFromFormat('Y-m-d H:i:s', $last_join_date);
+                @$csv_date_formated  = \DateTime::createFromFormat('m-d-Y g:i A', $cdr_line[2]." ". $cdr_line[3]);
+
+                if(is_array($cdr_line) && count($cdr_line) >=27 && $last_join_date_formated < $csv_date_formated) {
+
                     $cdr_row['name'] =  $cdr_line[0]; // ClareyMcKayRP-Desktop
                     $cdr_row['serial_number'] = $cdr_line[1]; //uuid or some string id
                     $cdr_row['start_date'] = $cdr_line[2]; //mm-dd-YYYY
@@ -106,6 +129,7 @@ $cdr_rows = []; // to be filled
                     $cdr_row['remote_system_name'] = $cdr_line[8]; // long string
                     $cdr_row['call_number_1'] = $cdr_line[9];
                     $cdr_row['transport_type'] = $cdr_line[11]; // SIP H_323
+                    $cdr_row['call_rate'] = $cdr_line[12]; // number
                     $cdr_row['call_rate'] = $cdr_line[12]; // number
                     $cdr_row['call_direction'] = $cdr_line[14]; // OUTGOING INCOMING
                     $cdr_row['call_id'] = $cdr_line[16]; // number
@@ -120,15 +144,26 @@ $cdr_rows = []; // to be filled
                 }
             }
         }
+
+        if(count($cdr_rows) > 0) {
+            echo "submitting ".count($cdr_rows)." to idsuite\n";
+            $response = $client->request("POST", REMOTE_API."/records/insertRecords", [
+                "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
+                "records" => json_encode($cdr_rows),
+            ]);
+
+            echo $response->getBody()->getContents();
+        }else{
+            echo $config['endpoint']." nothing to submit.\n";
+        }
+
+
+    }else{
+        echo $config['endpoint']." returned empty.\n";
     }
 
 
 
-$response = $client->request("get", REMOTE_API."/records/insertRecords", ['json' => [
-    "key" => KEY,
-    "proxy_id" => PROXY_ID,
-    "endpoint" => $config['endpoint'],
-    "records" => $cdr_row,
-]]);
 
-echo $response;
+}
+

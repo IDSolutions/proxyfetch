@@ -3,20 +3,23 @@ if(!defined (IN_APP) ) die("can't access file directly.");
 
 
 
+function lifesize ($config) {
 
 
 // api call to grab last call
 $client = new GuzzleHttp\Client(['defaults' => ['verify' => false]]);
-$response = $client->request("GET", REMOTE_API."/records/getRecords", ['json' => [
-    "key" => KEY,
-    "proxy_id" => PROXY_ID,
-    "endpoint" => $config['endpoint'],
+$response = $client->request("GET", REMOTE_API."/records/getRecords", [
+    "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
+
     "limit" => 10,
-]]);
+]);
 
 $result = json_decode($response->getBody()->getContents());
 
 $counter = 0;
+if(count($result) == 0)
+    $last_join_date = false;
+else
 do{
     $last_join_date = $result[$counter]->join_time;
     $date_valid = validateDate($last_join_date);
@@ -38,9 +41,9 @@ $cdr_records =  cdr_get_lifesize($config['endpoint'], $config['port'], $config['
 
 
 if($config['type'] == "icon")
-$cdr_records = icon_xml_to_arr($cdr_records,$last_join_date );
+    $cdr_records = icon_xml_to_arr($cdr_records, $last_join_date );
 elseif($config['type'] == "room")
-    $cdr_records = icon_xml_to_arr($cdr_records,$last_join_date );
+    $cdr_records = room_csv_to_arr($cdr_records, $last_join_date );
 
 //var_dump($cdr_records);
 
@@ -52,18 +55,29 @@ elseif($config['type'] == "room")
 ///
 ///
 
-$response = $client->request("GET", REMOTE_API."/records/insertRecords", ['json' => [
-    "key" => KEY,
-    "proxy_id" => PROXY_ID,
-    "endpoint" => $config['endpoint'],
-    "records" => json_encode($cdr_records),
-]]);
+    if(count($cdr_records) > 0) {
+        echo "submitting ".count($cdr_records)." records\n";
 
-$result = json_decode($response->getBody()->getContents());
+        $response = $client->request("POST", REMOTE_API."/records/insertRecords", [
+            "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
+            "records" => json_encode($cdr_records),
+        ]);
 
-echo $result;
+        $result = json_decode($response->getBody()->getContents());
 
-//die("killed lifesize");
+        echo $result;
+
+    }else {
+        echo "nothing to submit\n";
+    }
+
+
+
+/*********end ***************/
+
+
+}
+
 
 function cdr_get_lifesize($host_address, $endpoint_port, $node_type, $username, $password) {
 
@@ -82,10 +96,12 @@ function cdr_get_lifesize($host_address, $endpoint_port, $node_type, $username, 
         // $command = 'status call history -X -f -D '. CDR_DELIMETER // increased wait time for response to 3 seconds allowing -X to function properly, could potentially break with larger responses from Room system
         $command = 'status call history -X -D ;';
         ini_set("default_socket_timeout", 15);
-        $result =  ssh2_exec ($ssh, $command);
+        $stream =  ssh2_exec ($ssh, $command);
+        stream_set_blocking($stream, true);
+        $stream_out = ssh2_fetch_stream($stream, SSH2_STREAM_STDIO);
+        $result = stream_get_contents($stream_out);
 
-
-        return room_csv_to_arr($result);
+        return $result;
 
 
     }
@@ -173,16 +189,17 @@ function cdr_get_lifesize($host_address, $endpoint_port, $node_type, $username, 
 
 }
 
-function room_csv_to_arr($csv_string , $from_date)
+function room_csv_to_arr($csv_string , $from_date=0)
 {
 
 // example: 4738;2;IDS_Noc;172.31.20.8;Conference Room2;172.31.20.13;172.31.20.13;2017-11-03 09:55:04;01:49:57;Out
-    $rows = array_map('str_getcsv', $csv_string);
+
+    $lines = explode("\n", $csv_string);
     $arr = [];
 
-    foreach ($rows as $row) {
 
-
+    foreach ($lines as $line) {
+        $row = str_getcsv($line, ";");
 
             if (isset($row[9]) && validateDate($row[7]) && strtotime($from_date) < strtotime($row[7] )) {
 
@@ -207,6 +224,8 @@ function room_csv_to_arr($csv_string , $from_date)
 
 
     }
+
+
     return $arr;
 
 
