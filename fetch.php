@@ -1,6 +1,7 @@
 <?php
 DEFINE("IN_APP", "true");
 
+
 /*are you brave enough to go beyond this line? */
 
 require_once __DIR__."/vendor/autoload.php";
