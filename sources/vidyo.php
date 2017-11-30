@@ -70,7 +70,7 @@ if(isset($result->error)) {
 
     //if something is wrong
     if($last_join_date == false)
-        $last_join_date = date("Y-m-d H:i:s", strtotime("-2920 days"));
+        $last_join_date = date("Y-m-d H:i:s", strtotime("-".$config['go_back_days']." days"));
 
 
     // grab all calls after that date
