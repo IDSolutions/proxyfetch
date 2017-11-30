@@ -29,37 +29,46 @@ function vidyo($config) {
     // api call to grab last call
 
     $client = new GuzzleHttp\Client(['defaults' => ['verify' => false, ]]);
-    $response = $client->request("get", REMOTE_API."/records/getRecords",  [
-        "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
-        "limit" => 10,
+    $response = $client->request("GET", REMOTE_API."/records/getRecords",  [
+        "headers" => $config['headers'], 'query' => [ 'key' => KEY,  'proxy_id' => PROXY_ID,  'endpoint' => $config['endpoint'], 'limit' => 10,]
     ]);
 
 
-
     $result = $response->getBody()->getContents();
-
-
-    var_dump($result);
-
-
-//if(!$result) return "couldn't fetch";
-
     echo substr($result, 0, 100) ;
+
+    $result = json_decode($result);
+
+
+if(isset($result->error)) {
+    echo "Error: ". $result->error;
+    return "idsuite error: ".$result->error;
+}
+
     $counter = 0;
-    if(count($result) == 0)
+    if(count($result) == 0){
         $last_join_date = false;
-        else
-        do{
-            $last_join_date = $result[$counter]->join_time;
 
-            $date_valid = validateDate($last_join_date);
+    }
+        else{
 
-                $counter ++;
+            do{
+                $last_join_date = $result[$counter]->join_time;
+                if(isset($result[$counter]->source_id) && $result[$counter]->source_id) {
+                    $last_id = $result[$counter]->source_id;
+                    break;
+                }
 
-                if($counter >= count($result)) break;
-        }while(!$date_valid);
+                $date_valid = validateDate($last_join_date);
 
-    // assume if something is wrong
+                    $counter ++;
+
+                    if($counter >= count($result)) break;
+            }while(!$date_valid);
+
+        }
+
+    //if something is wrong
     if($last_join_date == false)
         $last_join_date = date("Y-m-d H:i:s", strtotime("-2920 days"));
 
@@ -74,9 +83,16 @@ function vidyo($config) {
     $pdo = new PDO($dsn, $config['username'], $config['password'], $opt);
 
 
+if(isset($last_id) && is_integer($last_id))
+    $query = "SELECT * FROM ".$config['table']." WHERE CallState='COMPLETED' AND id > '".$last_id."' ORDER BY CallID ASC LIMIT ".$config['limit'];
+else
     $query = "SELECT * FROM ".$config['table']." WHERE CallState='COMPLETED' AND JoinTime > '".$last_join_date."' ORDER BY CallID ASC LIMIT ".$config['limit'];
+
+
+echo $query;
     $stmt = $pdo->query($query);
     $rows = $stmt->fetchAll();
+
 
 
     // api call to insert all fetched results
@@ -84,10 +100,16 @@ if(count($rows) > 0) {
 
     echo "submitting ".count($rows)." records\n";
 
-    $response = $client->request("POST", REMOTE_API."/records/insertRecords", [
-        "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
-        "records" => json_encode($rows),
-    ]);
+    $response = $client->request("POST", REMOTE_API."/records/insertRecords",
+        [
+            "headers" => $config['headers'],
+            'form_params' =>[
+                "key" => KEY,
+                "proxy_id" => PROXY_ID,
+                "endpoint" => $config['endpoint'],
+                "records" => json_encode($rows),
+             ]
+        ]);
 
     //var_dump($response->getBody()->getContents());
     $result = $response->getBody()->getContents();

@@ -9,9 +9,9 @@ function lifesize ($config) {
 // api call to grab last call
 $client = new GuzzleHttp\Client(['defaults' => ['verify' => false]]);
 $response = $client->request("GET", REMOTE_API."/records/getRecords", [
-    "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
+    "headers" => $config['headers'], "query" => [ "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
 
-    "limit" => 10,
+    "limit" => 10,]
 ]);
 
 $result = json_decode($response->getBody()->getContents());
@@ -59,13 +59,13 @@ elseif($config['type'] == "room")
         echo "submitting ".count($cdr_records)." records\n";
 
         $response = $client->request("POST", REMOTE_API."/records/insertRecords", [
-            "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
-            "records" => json_encode($cdr_records),
+            "headers" => $config['headers'], 'form_params' => [  "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
+            "records" => json_encode($cdr_records)]
         ]);
 
         $result = json_decode($response->getBody()->getContents());
 
-        echo $result;
+        echo substr($result, 0, 100) ;
 
     }else {
         echo "nothing to submit\n";

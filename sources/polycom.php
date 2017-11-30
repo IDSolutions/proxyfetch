@@ -26,18 +26,18 @@ if(!defined (IN_APP) ) die("can't access file directly.");
 
 
 function polycom ($config) {
-
 // api call to grab last call
     $client = new GuzzleHttp\Client(['defaults' => ['verify' => false]]);
     $response = $client->request("GET", REMOTE_API."/records/getRecords", [
-        "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
+        "headers" => $config['headers'], "query" => ["key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
 
-        "limit" => 10,
+        "limit" => 10,]
     ]);
 
 
     $result = json_decode($response->getBody()->getContents());
 
+    echo substr($result, 0, 100) ;
 
 
 
@@ -148,11 +148,16 @@ function polycom ($config) {
         if(count($cdr_rows) > 0) {
             echo "submitting ".count($cdr_rows)." to idsuite\n";
             $response = $client->request("POST", REMOTE_API."/records/insertRecords", [
-                "headers" => $config['headers'], "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
+                "headers" => $config['headers'],
+                'form_params' => [
+                    "key" => KEY,  "proxy_id" => PROXY_ID,  "endpoint" => $config['endpoint'],
                 "records" => json_encode($cdr_rows),
-            ]);
+            ]]);
 
-            echo $response->getBody()->getContents();
+            $result = $response->getBody()->getContents();
+
+            echo substr($result, 0, 100) ;
+
         }else{
             echo $config['endpoint']." nothing to submit.\n";
         }
