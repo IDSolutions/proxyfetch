@@ -31,29 +31,32 @@ $headers = [
 ];
 
 
-foreach (SOURCES as $index=>$source) {
-    echo "\n\nFetching ". $source." (".(ENDPOINTS[$index]).")\n-----------------------\n";
+foreach (ENDPOINTS as $index => $endpoint) {
+    echo "\n\nFetching ". $endpoint['type']." (".($endpoint['address']).")\n-----------------------\n";
 
-    $config = array("endpoint" => ENDPOINTS[$index], "headers" => $headers);
+    $config = array("endpoint" => $endpoint['address'], "headers" => $headers);
 
 
     try {
 
 
 
-  //  if($index ==0) // 2, 3, ...
-    switch (strtolower($source)) {
+   // if($index ==4) // 2, 3, ...
+    switch (strtolower($endpoint['type'])) {
 
         case 'vidyo':
 
             $config = array_merge($config, array(
-                'limit' => 2000,
+                'limit' => 100,
                 'go_back_days' => 2920,
                 "database" => "portal2",
                 "table" => "ConferenceCall2",
-            ), ENDPOINTS_DETAILS[$index]);
+            ), $endpoint['details']);
+
+
 
             echo vidyo($config);
+
             break;
 
         case 'polycom':
@@ -63,13 +66,13 @@ foreach (SOURCES as $index=>$source) {
                 'go_back_days' => 2920, // if we didnt find last record in idsuite go back x days
                 "port" => "8443",
                 "query" => "api/rest/billing"
-            ), ENDPOINTS_DETAILS[$index]);
+            ), $endpoint['details']);
 
             echo polycom($config);
             break;
 
         case 'lifesize':
-            $config = array_merge($config, ENDPOINTS_DETAILS[$index]);
+            $config = array_merge($config, $endpoint['details']);
             echo lifesize($config);
             break;
 

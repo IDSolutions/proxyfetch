@@ -35,11 +35,13 @@ function polycom ($config) {
     ]);
 
 
-    $result = json_decode($response->getBody()->getContents());
+    $result = $response->getBody()->getContents();
 
     echo substr($result, 0, 100) ;
 
 
+
+    $result = json_decode ($result);
 
     $counter = 0;
     if(count($result) == 0)
@@ -66,7 +68,7 @@ function polycom ($config) {
     $to = null;
     $cdr_rows = []; // to be filled
 
-    $polycom_url = "https://".$config['endpoint']."/".$config['query'];
+    echo $polycom_url = "https://".$config['endpoint'].":".$config['port']."/".$config['query'];
     $data = array('from-date' => $from);
     if($to !== null)
         $data[]=array('to-date' => $to);
@@ -78,8 +80,14 @@ function polycom ($config) {
     $response = $client->request('GET', $polycom_url, ['verify' => false, 'auth' => [$config['username'], $config['password']] ]);
 
     $status_code = $response->getStatusCode(); // hopefully 200
-    file_put_contents ($tmp_file_path , $response->getBody()->getContents());
 
+
+    if($status_code != 200) {
+        return "Error Code: ".$status_code . " - ".$response->getBody()->getContents();
+    }
+
+
+    file_put_contents ($tmp_file_path , $response->getBody()->getContents());
 
     $zipper = new \Chumper\Zipper\Zipper();
 

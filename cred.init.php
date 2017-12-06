@@ -16,19 +16,13 @@ DEFINE('PROXY_ID', 'PRX45345344453');
 
 /* Endpoint Details */
 
-DEFINE('SOURCES', array(
-    'Vidyo',
-    'Polycom',
-    'LifeSize'));
 
+
+/* Endpoint Details */
 DEFINE('ENDPOINTS', array(
-        'portal.idsflame.com',
-        '10.0.0.10',
-        '10.0.0.11'));
+    array("type" => "Vidyo", "address"=> 'subdomain.hostname.com', 'details' =>     array('username'=> 'someuser', 'password' => 'passkey')),
+    array("type" => "Polycom", "address"=> '192.168.0.10', 'details' =>     array('type' =>'G500', 'username'=> 'admin', 'password' => 'passkey')),
+    array("type" => "LifeSize", "address"=> '192.168.0.10', 'details' =>     array('username'=> 'support', 'password'=>'passkey', 'port'=>'22', 'type' => 'icon')),
+    array("type" => "LifeSize", "address"=> '192.168.0.10', 'details' =>     array('username'=> 'auto', 'password'=>'passkey', 'port'=>'22', 'type' => 'room')),
 
-DEFINE('ENDPOINTS_DETAILS', array(
-    array('username'=> 'root', 'password' => 'password'),
-    array('type' =>'G500', 'username'=> 'IDS\username', 'password' => 'pass'),
-    array('username'=> 'admin', 'password'=>'password', 'port'=>'22', 'type' => 'icon'))); // type: icon, room
-
-
+));

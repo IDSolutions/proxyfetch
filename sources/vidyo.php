@@ -10,6 +10,7 @@ if(!defined (IN_APP) ) die("can't access file directly.");
 
 function vidyo($config) {
 
+
 //
 //    $client = new GuzzleHttp\Client();
 //    $response = $client->request("get", "http://localhost:8000/api/records/getRecords", [
@@ -35,13 +36,12 @@ function vidyo($config) {
 
 
     $result = $response->getBody()->getContents();
-    echo substr($result, 0, 100) ;
+    echo substr($result, 0, 100)."\n" ;
 
     $result = json_decode($result);
 
-
 if(isset($result->error)) {
-    echo "Error: ". $result->error;
+
     return "idsuite error: ".$result->error;
 }
 
@@ -89,7 +89,7 @@ else
     $query = "SELECT * FROM ".$config['table']." WHERE CallState='COMPLETED' AND JoinTime > '".$last_join_date."' ORDER BY CallID ASC LIMIT ".$config['limit'];
 
 
-echo $query;
+echo "Query: ".$query."\n";
     $stmt = $pdo->query($query);
     $rows = $stmt->fetchAll();
 
@@ -98,7 +98,7 @@ echo $query;
     // api call to insert all fetched results
 if(count($rows) > 0) {
 
-    echo "submitting ".count($rows)." records\n";
+    echo "Submitting ".count($rows)." records\n";
 
     $response = $client->request("POST", REMOTE_API."/records/insertRecords",
         [
@@ -114,7 +114,7 @@ if(count($rows) > 0) {
     //var_dump($response->getBody()->getContents());
     $result = $response->getBody()->getContents();
 
-    echo "IDSuite: ".    substr($result, 0, 100) ;
+    echo "IDSuite: ".    substr($result, 0, 100) ."\n";
 }else {
     echo "nothing to submit\n";
 }
