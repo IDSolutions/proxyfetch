@@ -14,15 +14,16 @@ if(!defined (IN_APP) ) die("can't access file directly.");
 DEFINE('KEY', 'some_long_key_provided_by_idsolutions');
 DEFINE('PROXY_ID', 'PRX45345344453');
 
-/* Endpoint Details */
-
-
 
 /* Endpoint Details */
 DEFINE('ENDPOINTS', array(
-    array("type" => "Vidyo", "address"=> 'subdomain.hostname.com', 'details' =>     array('username'=> 'someuser', 'password' => 'passkey')),
-    array("type" => "Polycom", "address"=> '192.168.0.10', 'details' =>     array('type' =>'G500', 'username'=> 'admin', 'password' => 'passkey')),
-    array("type" => "LifeSize", "address"=> '192.168.0.10', 'details' =>     array('username'=> 'support', 'password'=>'passkey', 'port'=>'22', 'type' => 'icon')),
-    array("type" => "LifeSize", "address"=> '192.168.0.10', 'details' =>     array('username'=> 'auto', 'password'=>'passkey', 'port'=>'22', 'type' => 'room')),
+    array("type"  => "Vidyo", "address"=> 'subdomain.hostname.com',
+        'details' => array('username'=> 'someuser', 'password' => 'passkey')),
+    array("type"  => "Polycom", "address"=> '192.168.0.10',
+        'details' => array('type' =>'G500', 'username'=> 'admin', 'password' => 'passkey')),
+    array("type"  => "LifeSize", "address"=> '192.168.0.10',
+        'details' => array('username'=> 'support', 'password'=>'passkey', 'port'=>'22', 'type' => 'icon')),
+    array("type"  => "LifeSize", "address"=> '192.168.0.10',
+        'details' => array('username'=> 'auto', 'password'=>'passkey', 'port'=>'22', 'type' => 'room')),
 
 ));
